@@ -4,30 +4,33 @@ using Azure.ClientGenerator.Core;
 using Microsoft.Peering;
 
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(CdnPeeringPrefix.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(CdnPeeringPrefix.properties
+);
 
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(Operation.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(Operation.properties);
 
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeeringLocation.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeeringLocation.properties);
 
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeeringServiceLocation.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeeringServiceLocation.properties
+);
 
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeeringServiceProvider.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeeringServiceProvider.properties
+);
 
 @@clientName(Peerings.createOrUpdate::parameters.resource, "peering");
 @@clientName(Peerings.update::parameters.properties, "tags");
 @@clientLocation(Peerings.listByPeering, "ReceivedRoutes");
 @@clientLocation(Peerings.list, "RpUnbilledPrefixes");
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(Peering.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(Peering.properties);
 
 @@clientName(PeerAsns.createOrUpdate::parameters.resource, "peerAsn");
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeerAsn.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeerAsn.properties);
 
 @@clientLocation(PeeringRegisteredAsns.get, "RegisteredAsns");
 @@clientLocation(PeeringRegisteredAsns.createOrUpdate, "RegisteredAsns");
@@ -37,7 +40,8 @@ using Microsoft.Peering;
 @@clientLocation(PeeringRegisteredAsns.delete, "RegisteredAsns");
 @@clientLocation(PeeringRegisteredAsns.listByPeering, "RegisteredAsns");
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeeringRegisteredAsn.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeeringRegisteredAsn.properties
+);
 
 @@clientLocation(PeeringRegisteredPrefixes.get, "RegisteredPrefixes");
 @@clientLocation(PeeringRegisteredPrefixes.createOrUpdate,
@@ -50,13 +54,15 @@ using Microsoft.Peering;
 @@clientLocation(PeeringRegisteredPrefixes.listByPeering, "RegisteredPrefixes");
 @@clientLocation(PeeringRegisteredPrefixes.validate, "RegisteredPrefixes");
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeeringRegisteredPrefix.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeeringRegisteredPrefix.properties
+);
 
 @@clientName(ConnectionMonitorTests.createOrUpdate::parameters.resource,
   "connectionMonitorTest"
 );
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(ConnectionMonitorTest.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(ConnectionMonitorTest.properties
+);
 
 @@clientLocation(PeeringServicePrefixes.get, "Prefixes");
 @@clientLocation(PeeringServicePrefixes.createOrUpdate, "Prefixes");
@@ -66,14 +72,15 @@ using Microsoft.Peering;
 @@clientLocation(PeeringServicePrefixes.delete, "Prefixes");
 @@clientLocation(PeeringServicePrefixes.listByPeeringService, "Prefixes");
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeeringServicePrefix.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeeringServicePrefix.properties
+);
 
 @@clientName(PeeringServices.createOrUpdate::parameters.resource,
   "peeringService"
 );
 @@clientName(PeeringServices.update::parameters.properties, "tags");
 #suppress "deprecated" "@flattenProperty decorator is not recommended to use."
-@@flattenProperty(PeeringService.properties);
+@@Azure.ClientGenerator.Core.Legacy.flattenProperty(PeeringService.properties);
 
 @@clientLocation(CdnPeeringPrefixesOperationGroup.list, "CdnPeeringPrefixes");
 
