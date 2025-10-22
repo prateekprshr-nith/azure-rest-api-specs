@@ -118,6 +118,7 @@ interface LookingGlassOperationGroup {
       /**
        * The IP address of the destination.
        */
+      #suppress "@azure-tools/typespec-azure-core/casing-style" "For backward compatibility"
       @query("destinationIP")
       destinationIP: string;
     }

@@ -50,7 +50,21 @@ interface Peerings {
    * Updates tags for a peering with the specified name under the given subscription and resource group.
    */
   @patch(#{ implicitOptionality: false })
-  update is ArmCustomPatchSync<Peering, PatchModel = ResourceTags>;
+  update is ArmCustomPatchSync<
+    Peering,
+    PatchModel = {
+      /**
+       * Gets or sets the tags, a dictionary of descriptors arm object
+       */
+      #suppress "@azure-tools/typespec-azure-resource-manager/arm-no-record" "For backward compatibility"
+      tags?: Record<string>;
+
+      /**
+       * The SKU that defines the tier and kind of the peering.
+       */
+      sku?: PeeringSku;
+    }
+  >;
 
   /**
    * Deletes an existing peering with the specified name under the given subscription and resource group.
