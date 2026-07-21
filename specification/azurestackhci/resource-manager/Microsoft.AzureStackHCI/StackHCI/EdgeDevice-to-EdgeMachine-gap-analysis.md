@@ -22,15 +22,19 @@ HciEdgeDevice ─▶ properties: HciEdgeDeviceProperties
                          └── (inherited) ReportedProperties
 ```
 
-Every leaf property in this chain was compared against:
+**Parity rules (confirmed 2026-07-21):**
 
-- `EdgeMachine` resource envelope + `EdgeMachineProperties`
-- `EdgeMachineReportedProperties`
-- EdgeMachine **child resources** (`EdgeMachineNetworkAdapter`, `EdgeMachineDisk`) where
-  data was relocated out of the inline property bag.
+1. **Reported parity:** every subfield of `HciReportedProperties` must exist **inside**
+   `EdgeMachineReportedProperties`. Placement in a **child resource** (`EdgeMachineDisk`,
+   `EdgeMachineNetworkAdapter`, …) or on the `EdgeMachineProperties` top level does **not** satisfy it.
+2. **deviceConfiguration parity:** the non-reported, top-level writable `deviceConfiguration`
+   (`nicDetails`, `deviceMetadata`) must also exist on **EdgeMachine** directly; its data living on a
+   child resource does **not** satisfy it. Tracked as dedicated gaps.
+3. `lastSyncTimestamp` → `lastUpdated` **rename is accepted** (not a gap).
 
-**Legend:** ✅ covered (same or superset) · ⚠️ present but shape/mutability changed ·
-❌ absent everywhere in EdgeMachine.
+**Total: 7 gaps** — 5 in `reportedProperties` (§5.2), 2 in `deviceConfiguration` (§5.1). See §7.
+
+**Legend:** ✅ present / acceptable · ❌ gap (must be added) · ⚠️ differs (context only).
 
 ---
 
@@ -77,33 +81,37 @@ Equivalent — no field lost.
 
 ---
 
-## 5. Property-level comparison (every leaf)
+## 5. Property-level comparison
+
+§5.1 covers the top-level `properties` (including the non-reported `deviceConfiguration`); §5.2 covers
+`reportedProperties`. Gaps are marked ❌ and numbered to match §7.
 
 ### 5.1 `properties` (`EdgeDeviceProperties` / `HciEdgeDeviceProperties`)
 
 | HCI EdgeDevice property | EdgeMachine | Status |
 |---|---|---|
 | `provisioningState` (read) | `EdgeMachineProperties.provisioningState` | ✅ same |
-| `deviceConfiguration.nicDetails[]` (writable) | → child resource `EdgeMachineNetworkAdapter` | ⚠️ relocated (see §6.1) |
-| `deviceConfiguration.deviceMetadata` (string) | — | ❌ **absent** |
+| `deviceConfiguration.nicDetails[]` (writable) | **no** top-level equivalent on EdgeMachine (data only on `EdgeMachineNetworkAdapter` child — does not satisfy parity) | ❌ gap 6 |
+| `deviceConfiguration.deviceMetadata` (string) | **no** equivalent anywhere | ❌ gap 7 |
 | `reportedProperties` (read) | `EdgeMachineProperties.reportedProperties` | see §5.2 |
 
 ### 5.2 `properties.reportedProperties` (`ReportedProperties` / `HciReportedProperties`)
 
 | HCI EdgeDevice property | EdgeMachine | Status |
 |---|---|---|
-| `deviceState` (union) | `connectivityStatus` + `machineState` | ⚠️ partial — see note |
+| `deviceState` (union) | **absent** (`connectivityStatus`/`machineState` are top-level, not reported) | ❌ gap 1 |
 | `extensionProfile.extensions[]` (extensionName, state, errorDetails[].exception, extensionResourceId, typeHandlerVersion, managedBy) | `EdgeMachineReportedProperties.extensionProfile` (same `ExtensionProfile` model) | ✅ identical |
-| `lastSyncTimestamp` (read) | `EdgeMachineProperties.lastSyncTimestamp` + `reportedProperties.lastUpdated` | ✅ covered |
-| `confidentialVmProfile` (igvmStatus, statusDetails[].code/message) | — | ❌ **absent** |
+| `lastSyncTimestamp` (read) | `EdgeMachineReportedProperties.lastUpdated` (renamed) | ✅ accepted (rename) |
+| `confidentialVmProfile` (igvmStatus, statusDetails[].code/message) | **absent** | ❌ gap 2 |
 | `networkProfile.nicDetails[]` (16 fields) | `EdgeMachineNetworkProfile.nicDetails` (`EdgeMachineNicDetail`) | ✅ identical |
 | `networkProfile.switchDetails[]` | `EdgeMachineNetworkProfile.switchDetails` (same `SwitchDetail`) | ✅ identical |
-| `networkProfile.hostNetwork` | — | ❌ **absent** (see §5.3) |
-| `networkProfile.sdnProperties` (sdnStatus, sdnDomainName, sdnApiAddress) | — | ❌ **absent** |
+| `networkProfile.hostNetwork` | **absent** from `EdgeMachineNetworkProfile` | ❌ gap 3 (see §5.3) |
+| `networkProfile.sdnProperties` (sdnStatus, sdnDomainName, sdnApiAddress) | **absent** from `EdgeMachineNetworkProfile` | ❌ gap 4 |
 | `osProfile` (bootType, assemblyVersion) | `EdgeMachineReportedProperties.osProfile` (`OsProfile`) | ✅ superset |
 | `sbeDeploymentPackageInfo` (code, message, sbeManifest) | same model | ✅ identical |
+| `storageProfile` (`HciStorageProfile`) | `EdgeMachineReportedProperties.storageProfile` (`StorageProfile`) | ✅ **container present** |
 | `storageProfile.poolableDisksCount` | `StorageProfile.poolableDisksCount` | ✅ same |
-| `storageProfile.disks[]` (`EdgeDeviceDisks`) | → child resource `EdgeMachineDisk` | ⚠️ relocated (see §6.2) |
+| `storageProfile.disks[]` (`EdgeDeviceDisks`) | **absent** from `StorageProfile` (only on `EdgeMachineDisk` child) | ❌ gap 5 |
 | `hardwareProfile.processorType` | `HardwareProfile.processorType` | ✅ superset |
 
 > **`deviceState` note:** `DeviceState` = `NotSpecified, Connected, Disconnected, Repairing,
@@ -130,9 +138,13 @@ Equivalent — no field lost.
 
 ---
 
-## 6. Relocated child-resource diffs (data preserved)
+## 6. Where each gap's data currently lives (informational)
 
-### 6.1 `deviceConfiguration.nicDetails` → `EdgeMachineNetworkAdapter`
+> These child-resource diffs show where the data exists today. Per the parity rules this does **not**
+> satisfy the requirement — the data must be brought onto EdgeMachine directly (gap 5 → into
+> `StorageProfile`; gap 6 → onto EdgeMachine top-level `deviceConfiguration`).
+
+### 6.1 Gap 6 — `deviceConfiguration.nicDetails` (data currently on `EdgeMachineNetworkAdapter`)
 
 Child resource key `networkAdapterName`, segment `networkAdapters`. All 9 EdgeDevice `NicDetail`
 fields exist, but four move from **writable** to **read-only**:
@@ -145,10 +157,13 @@ fields exist, but four move from **writable** to **read-only**:
 EdgeMachine adds writable `ipInterfaceType`, `vlanId`, `interfaceState`, `wifiConfiguration`, and
 many read-only reported fields (macAddress, slot, switchName, interfaceSpeed, rdmaCapability, …).
 
-### 6.2 `storageProfile.disks` (`EdgeDeviceDisks`) → `EdgeMachineDisk`
+### 6.2 Gap 5 — `storageProfile.disks[]` (data currently on `EdgeMachineDisk`)
 
-Child resource key `diskName`, segment `disks`. All 6 fields present; disk `id` folds into the
-resource identity:
+`StorageProfile` and its `poolableDisksCount` field **are** present inline in
+`EdgeMachineReportedProperties`. Only the inline per-disk `disks[]` **array** is not part of
+`StorageProfile`; equivalent (richer) per-disk data is exposed via the `EdgeMachineDisk` child
+resource (key `diskName`, segment `disks`). All 6 `EdgeDeviceDisks` fields are present there; disk
+`id` folds into the resource identity:
 
 | `EdgeDeviceDisks` field | `EdgeMachineDisk` (`DiskReportedProperties`) | Change |
 |---|---|---|
@@ -162,49 +177,43 @@ resource identity:
 
 ---
 
-## 7. Consolidated findings
+## 7. Consolidated gap list (authoritative)
 
-### A. Hard absences — nothing in EdgeMachine or its children carries these
+**7 gaps** — 5 in `reportedProperties`, 2 in `deviceConfiguration`. Child resources and top-level
+`EdgeMachineProperties` fields do **not** satisfy parity.
 
-1. `deviceConfiguration.deviceMetadata` (string)
-2. `reportedProperties.deviceState` states: **Repairing, Draining, InMaintenance, Resuming, Processing**
-3. `reportedProperties.confidentialVmProfile` (igvmStatus, statusDetails[].code/message)
-4. `reportedProperties.networkProfile.hostNetwork` (intents[], storageNetworks[], storageConnectivitySwitchless, enableStorageAutoIp)
-5. `reportedProperties.networkProfile.sdnProperties` (sdnStatus, sdnDomainName, sdnApiAddress)
+### reportedProperties — add to `EdgeMachineReportedProperties`
 
-### B. Relocated — present, but shape / mutability / identity changed
+1. `deviceState` (`DeviceState`) — whole field absent; must cover all 8 states incl. `Repairing`, `Draining`, `InMaintenance`, `Resuming`, `Processing`.
+2. `confidentialVmProfile` (`ConfidentialVmProfile`: `igvmStatus`, `statusDetails[].code/message`).
+3. `networkProfile.hostNetwork` (`HciEdgeDeviceHostNetwork`: `intents[]` + virtualSwitch/QoS/adapter overrides, `storageNetworks[]` + `storageAdapterIPInfo`, `storageConnectivitySwitchless`, `enableStorageAutoIp`) — add to `EdgeMachineNetworkProfile`.
+4. `networkProfile.sdnProperties` (`SdnProperties`: `sdnStatus`, `sdnDomainName`, `sdnApiAddress`) — add to `EdgeMachineNetworkProfile`.
+5. `storageProfile.disks[]` (`EdgeDeviceDisks`: `id`, `sizeInBytes`, `type`, `model`, `manufacturer`, `isSupported`) — add **inline** to `StorageProfile` (the `EdgeMachineDisk` child does not satisfy parity).
 
-6. writable `deviceConfiguration.nicDetails` → `EdgeMachineNetworkAdapter` (4 fields become read-only)
-7. `reportedProperties.storageProfile.disks` → `EdgeMachineDisk` (`id` → resource identity, `type` → `diskType` enum)
+### deviceConfiguration — add to EdgeMachine top-level
 
-### C. Envelope / semantic differences
+6. `deviceConfiguration.nicDetails[]` (writable `NicDetail`) — currently only on the `EdgeMachineNetworkAdapter` child.
+7. `deviceConfiguration.deviceMetadata` (string) — no equivalent anywhere.
 
-8. `name` default `"default"` dropped
-9. `name` pattern `{3,24}` (no `_`) → `{3,63}` (with `_`)
-10. `kind: "HCI"` discriminator → `edgeMachineKind` property (no `HCI` value)
-11. extension resource → tracked resource
-12. `list` by target scope → `listByResourceGroup` + `listBySubscription`
+### Covered — no action
 
-### D. Covered (same or superset — not gaps)
-
-`provisioningState`, `extensionProfile`, `lastSyncTimestamp`, `networkProfile.nicDetails` (read),
-`switchDetails`, `osProfile`, `sbeDeploymentPackageInfo`, `storageProfile.poolableDisksCount`,
-`hardwareProfile`, and all `get` / `createOrUpdate` / `delete` / `validate` operations.
+`extensionProfile`, `networkProfile.nicDetails`, `networkProfile.switchDetails`, `osProfile` (superset),
+`sbeDeploymentPackageInfo`, `storageProfile` + `poolableDisksCount`, `hardwareProfile` (superset), and
+`lastSyncTimestamp` → `lastUpdated` (accepted rename). Operations & validate models: no gaps (§3–§4).
 
 ---
 
-## 8. Recommended actions to make EdgeMachine a strict superset
+## 8. Recommended actions
 
-| # | Action | Priority |
-|---|---|---|
-| 1 | Add `deviceMetadata` (string) to an EdgeMachine writable configuration surface | High |
-| 2 | Extend `connectivityStatus`/`machineState` (or add a device-state field) to cover Repairing, Draining, InMaintenance, Resuming, Processing | High |
-| 3 | Add `confidentialVmProfile` to `EdgeMachineReportedProperties` | High |
-| 4 | Add `hostNetwork` to `EdgeMachineNetworkProfile` | High |
-| 5 | Add `sdnProperties` to `EdgeMachineNetworkProfile` | High |
-| 6 | Confirm the writable-→read-only shift for `interfaceDescription`, `componentId`, `driverVersion`, `defaultIsolationId` is acceptable (relocation to `EdgeMachineNetworkAdapter`) | Medium |
-| 7 | Confirm disk `id` → resource identity and `type` → `diskType` mapping is acceptable (relocation to `EdgeMachineDisk`) | Medium |
-| 8 | Confirm envelope/semantic changes (name default & pattern, `kind` discriminator, extension→tracked, list semantics) are intentional | Review |
+| # | Gap | Action | Target |
+|---|---|---|---|
+| 1 | deviceState | Add `deviceState` (`DeviceState`, all 8 states) | `EdgeMachineReportedProperties` |
+| 2 | confidentialVmProfile | Add `confidentialVmProfile` (`ConfidentialVmProfile`) | `EdgeMachineReportedProperties` |
+| 3 | hostNetwork | Add `hostNetwork` (`HciEdgeDeviceHostNetwork` equivalent) | `EdgeMachineNetworkProfile` |
+| 4 | sdnProperties | Add `sdnProperties` (`SdnProperties`) | `EdgeMachineNetworkProfile` |
+| 5 | disks | Add `disks[]` (`EdgeDeviceDisks` equivalent) **inline** | `StorageProfile` |
+| 6 | nicDetails | Add writable `deviceConfiguration.nicDetails[]` (`NicDetail`) | `EdgeMachine` top-level |
+| 7 | deviceMetadata | Add `deviceConfiguration.deviceMetadata` (string) | `EdgeMachine` top-level |
 
-> **Out of scope:** EdgeMachine's net-new capabilities (GPU, updates, volumes, jobs, WiFi, etc.)
-> are not "missing from EdgeDevice" and are excluded from this analysis.
+> **Accepted (no action):** `lastSyncTimestamp` → `lastUpdated` rename.
+> **Out of scope:** EdgeMachine net-new capabilities (GPU, updates, volumes, jobs, WiFi, etc.).
